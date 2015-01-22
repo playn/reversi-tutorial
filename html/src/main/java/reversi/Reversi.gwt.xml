@@ -1,5 +1,5 @@
 <module rename-to='reversi'>
-  <inherits name='playn.PlayN'/>
+  <inherits name='playn.Scene'/>
   <inherits name='ReversiAssets'/>
 
   <source path='core'/>

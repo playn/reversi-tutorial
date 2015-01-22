@@ -1,10 +1,13 @@
 package reversi.robovm;
 
+import org.robovm.apple.coregraphics.CGRect;
 import org.robovm.apple.foundation.NSAutoreleasePool;
 import org.robovm.apple.uikit.UIApplication;
 import org.robovm.apple.uikit.UIApplicationDelegateAdapter;
 import org.robovm.apple.uikit.UIApplicationLaunchOptions;
 import org.robovm.apple.uikit.UIInterfaceOrientationMask;
+import org.robovm.apple.uikit.UIScreen;
+import org.robovm.apple.uikit.UIWindow;
 
 import playn.robovm.RoboPlatform;
 import reversi.core.Reversi;
@@ -13,12 +16,21 @@ public class ReversiRoboVM extends UIApplicationDelegateAdapter {
 
   @Override
   public boolean didFinishLaunching (UIApplication app, UIApplicationLaunchOptions launchOpts) {
-    RoboPlatform.Config config = new RoboPlatform.Config();
-    // use config to customize the RoboVM platform, if needed
-    RoboPlatform pf = RoboPlatform.register(app, config);
-    addStrongRef(pf);
+    // create a full-screen window
+    CGRect bounds = UIScreen.getMainScreen().getBounds();
+    UIWindow window = new UIWindow(bounds);
 
-    pf.run(new Reversi());
+    // configure and create the PlayN platform
+    RoboPlatform.Config config = new RoboPlatform.Config();
+    config.orients = UIInterfaceOrientationMask.All;
+    RoboPlatform plat = RoboPlatform.create(window, config);
+
+    // create and initialize our game
+    new Reversi(plat);
+
+    // make our main window visible (this starts the platform)
+    window.makeKeyAndVisible();
+    addStrongRef(window);
     return true;
   }
 
