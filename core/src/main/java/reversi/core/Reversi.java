@@ -36,11 +36,17 @@ public class Reversi extends SceneGame {
   public Reversi (Platform plat) {
     super(plat, 33); // update our "simulation" 33ms (30 times per second)
 
-    // create and add background image layer
-    Image bgImage = plat.assets().getImage("images/bg.png");
-    ImageLayer bgLayer = new ImageLayer(bgImage);
-    // scale the background to fill the screen
-    bgLayer.setSize(plat.graphics().viewSize);
-    rootLayer.add(bgLayer);
+    // figure out how big the game view is
+    final IDimension size = plat.graphics().viewSize;
+
+    // create a layer that just draws a grey background
+    rootLayer.add(new Layer() {
+      protected void paintImpl (Surface surf) {
+        surf.setFillColor(0xFFCCCCCC).fillRect(0, 0, size.width(), size.height());
+      }
+    });
+
+    // create and add a board view
+    rootLayer.addCenterAt(new BoardView(this, size), size.width()/2, size.height()/2);
   }
 }
