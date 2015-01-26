@@ -1,14 +1,23 @@
 package reversi.core;
 
+import java.util.List;
+
 import pythagoras.f.IDimension;
+import react.RMap;
+import react.Slot;
+import react.Value;
+
 import playn.core.*;
 import playn.scene.*;
-import react.RMap;
-import react.Value;
+import playn.scene.Mouse;
+import playn.scene.Pointer;
 
 public class Reversi extends SceneGame {
 
-  public static enum Piece { BLACK, WHITE }
+  public static enum Piece {
+    BLACK, WHITE;
+    public Piece next () { return values()[(ordinal()+1) % values().length]; }
+  }
 
   public static class Coord {
     public final int x, y;
@@ -32,6 +41,7 @@ public class Reversi extends SceneGame {
   public final int boardSize = 8;
   public final RMap<Coord,Piece> pieces = RMap.create();
   public final Value<Piece> turn = Value.create(null);
+  public final Logic logic = new Logic(boardSize);
 
   public Reversi (Platform plat) {
     super(plat, 33); // update our "simulation" 33ms (30 times per second)
@@ -47,7 +57,25 @@ public class Reversi extends SceneGame {
     });
 
     // create and add a game view
-    rootLayer.add(new GameView(this, size));
+    final GameView gview = new GameView(this, size);
+    rootLayer.add(gview);
+
+    // wire up a turn handler
+    turn.connect(new Slot<Piece>() {
+      private boolean lastPlayerPassed = false;
+      @Override public void onEmit (Piece color) {
+        List<Coord> plays = logic.legalPlays(pieces, color);
+        if (!plays.isEmpty()) {
+          lastPlayerPassed = false;
+          gview.showPlays(plays, color);
+        } else if (lastPlayerPassed) {
+          endGame();
+        } else {
+          lastPlayerPassed = true;
+          turn.update(color.next());
+        }
+      }
+    });
 
     // start the game
     reset();
@@ -62,5 +90,9 @@ public class Reversi extends SceneGame {
     pieces.put(new Coord(half-1, half  ), Piece.BLACK);
     pieces.put(new Coord(half  , half  ), Piece.WHITE);
     turn.updateForce(Piece.BLACK);
+  }
+
+  private void endGame () {
+    // TODO
   }
 }

@@ -13,7 +13,9 @@
  */
 package reversi.core;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import playn.core.*;
@@ -58,6 +60,16 @@ public class GameView extends GroupLayer {
       @Override public void onPut (Coord coord, Piece piece) { setPiece(coord, piece); }
       @Override public void onRemove (Coord coord) { clearPiece(coord); }
     });
+  }
+
+  public void showPlays (List<Coord> coords, Piece color) {
+    final List<ImageLayer> plays = new ArrayList<>();
+    for (Coord coord : coords) {
+      ImageLayer pview = addPiece(coord, color);
+      pview.setAlpha(0.3f);
+      // TODO: listen for a click on pview and make that move
+      plays.add(pview);
+    }
   }
 
   private ImageLayer addPiece (Coord at, Piece piece) {
