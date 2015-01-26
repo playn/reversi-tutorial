@@ -46,7 +46,21 @@ public class Reversi extends SceneGame {
       }
     });
 
-    // create and add a board view
-    rootLayer.addCenterAt(new BoardView(this, size), size.width()/2, size.height()/2);
+    // create and add a game view
+    rootLayer.add(new GameView(this, size));
+
+    // start the game
+    reset();
+  }
+
+  /** Clears the board and sets the 2x2 set of starting pieces in the middle. */
+  private void reset () {
+    pieces.clear();
+    int half = boardSize/2;
+    pieces.put(new Coord(half-1, half-1), Piece.WHITE);
+    pieces.put(new Coord(half  , half-1), Piece.BLACK);
+    pieces.put(new Coord(half-1, half  ), Piece.BLACK);
+    pieces.put(new Coord(half  , half  ), Piece.WHITE);
+    turn.updateForce(Piece.BLACK);
   }
 }
