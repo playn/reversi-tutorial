@@ -37,9 +37,13 @@ public class GameView extends GroupLayer {
   private final Tile[] ptiles = new Tile[Piece.values().length];
   private final Map<Coord,ImageLayer> pviews = new HashMap<>();
 
+  private final Sound click;
+
   public GameView (Reversi game, IDimension viewSize) {
     this.game = game;
     this.bview = new BoardView(game, viewSize);
+    this.click = game.plat.assets().getSound("sounds/click");
+
     addCenterAt(bview, viewSize.width()/2, viewSize.height()/2);
     addAt(pgroup, bview.tx(), bview.ty());
 
@@ -77,6 +81,7 @@ public class GameView extends GroupLayer {
           for (ImageLayer play : plays) play.close();
           // apply this play to the game state
           game.logic.applyPlay(game.pieces, color, coord);
+          click.play();
           // and move to the next player's turn
           game.turn.update(color.next());
         }
