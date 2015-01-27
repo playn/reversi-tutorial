@@ -85,8 +85,8 @@ public class GameView extends GroupLayer {
     for (final Coord coord : coords) {
       ImageLayer pview = addPiece(coord, color);
       // fade the piece in
-      pview.setAlpha(0);
-      game.anim.tweenAlpha(pview).to(0.3f).in(300);
+      pview.setVisible(false).setAlpha(0);
+      game.anim.setVisible(pview, true).then().tweenAlpha(pview).to(0.3f).in(300);
       // when the player clicks on a potential play, commit that play as their move
       pview.events().connect(new Pointer.Listener() {
         @Override public void onStart (Pointer.Interaction iact) {
