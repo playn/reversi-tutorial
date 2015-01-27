@@ -14,6 +14,8 @@ import playn.scene.*;
 import playn.scene.Mouse;
 import playn.scene.Pointer;
 
+import tripleplay.anim.Animator;
+
 public class Reversi extends SceneGame {
 
   public static enum Piece {
@@ -45,6 +47,7 @@ public class Reversi extends SceneGame {
   public final Value<Piece> turn = Value.create(null);
   public final Logic logic = new Logic(boardSize);
   public final Pointer pointer;
+  public final Animator anim;
 
   public Reversi (Platform plat) {
     super(plat, 33); // update our "simulation" 33ms (30 times per second)
@@ -52,6 +55,9 @@ public class Reversi extends SceneGame {
     // wire up pointer and mouse event dispatch
     pointer = new Pointer(plat, rootLayer, true);
     plat.input().mouseEvents.connect(new Mouse.Dispatcher(rootLayer, false));
+
+    // create an animator for some zip zing
+    anim = new Animator(paint);
 
     // figure out how big the game view is
     final IDimension size = plat.graphics().viewSize;

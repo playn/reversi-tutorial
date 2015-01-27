@@ -18,7 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import pythagoras.f.FloatMath;
 import pythagoras.f.IDimension;
+import pythagoras.f.Point;
 import react.RMap;
 
 import playn.core.*;
@@ -29,6 +31,8 @@ import playn.scene.Pointer;
 import reversi.core.Reversi.Piece;
 import reversi.core.Reversi.Coord;
 
+import tripleplay.anim.Animation;
+
 public class GameView extends GroupLayer {
   private final Reversi game;
   private final BoardView bview;
@@ -38,11 +42,13 @@ public class GameView extends GroupLayer {
   private final Map<Coord,ImageLayer> pviews = new HashMap<>();
 
   private final Sound click;
+  private final FlipBatch flip;
 
   public GameView (Reversi game, IDimension viewSize) {
     this.game = game;
     this.bview = new BoardView(game, viewSize);
     this.click = game.plat.assets().getSound("sounds/click");
+    this.flip = new FlipBatch(game.plat.graphics().gl, 2);
 
     addCenterAt(bview, viewSize.width()/2, viewSize.height()/2);
     addAt(pgroup, bview.tx(), bview.ty());
@@ -69,11 +75,18 @@ public class GameView extends GroupLayer {
     });
   }
 
+  @Override public void close () {
+    super.close();
+    flip.close();
+  }
+
   public void showPlays (List<Coord> coords, final Piece color) {
     final List<ImageLayer> plays = new ArrayList<>();
     for (final Coord coord : coords) {
       ImageLayer pview = addPiece(coord, color);
-      pview.setAlpha(0.3f);
+      // fade the piece in
+      pview.setAlpha(0);
+      game.anim.tweenAlpha(pview).to(0.3f).in(300);
       // when the player clicks on a potential play, commit that play as their move
       pview.events().connect(new Pointer.Listener() {
         @Override public void onStart (Pointer.Interaction iact) {
@@ -81,7 +94,6 @@ public class GameView extends GroupLayer {
           for (ImageLayer play : plays) play.close();
           // apply this play to the game state
           game.logic.applyPlay(game.pieces, color, coord);
-          click.play();
           // and move to the next player's turn
           game.turn.update(color.next());
         }
@@ -106,9 +118,37 @@ public class GameView extends GroupLayer {
   private void setPiece (Coord at, Piece piece) {
     ImageLayer pview = pviews.get(at);
     if (pview == null) {
-      pviews.put(at, addPiece(at, piece));
+      pviews.put(at, pview = addPiece(at, piece));
+      // animate the piece view "falling" into place
+      pview.setVisible(false).setScale(2);
+      game.anim.setVisible(pview, true).then().
+        tweenScale(pview).to(1).in(500).bounceOut();
+      game.anim.delay(250).then().play(click);
+      game.anim.addBarrier();
+
     } else {
-      pview.setTile(ptiles[piece.ordinal()]);
+      final ImageLayer fview = pview;
+      final Tile tile = ptiles[piece.ordinal()];
+      final Point eye = LayerUtil.layerToScreen(pview, fview.width()/2, fview.height()/2);
+      Animation.Value flipAngle = new Animation.Value() {
+        public float initial () { return flip.angle; }
+        public void set (float value) { flip.angle = value; }
+      };
+      game.anim.
+        action(new Runnable() { public void run () {
+          flip.eyeX = eye.x;
+          flip.eyeY = eye.y;
+          fview.setBatch(flip);
+        }}).
+        then().tween(flipAngle).from(0).to(FloatMath.PI/2).in(150).
+        then().action(new Runnable() { public void run () {
+          fview.setTile(tile);
+        }}).
+        then().tween(flipAngle).to(FloatMath.PI).in(150).
+        then().action(new Runnable() { public void run () {
+          fview.setBatch(null);
+        }});
+      game.anim.addBarrier();
     }
   }
 
