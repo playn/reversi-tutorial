@@ -1,8 +1,10 @@
 package reversi.core;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import pythagoras.f.IDimension;
+import pythagoras.f.Point;
 import react.RMap;
 import react.Slot;
 import react.Value;
@@ -42,9 +44,14 @@ public class Reversi extends SceneGame {
   public final RMap<Coord,Piece> pieces = RMap.create();
   public final Value<Piece> turn = Value.create(null);
   public final Logic logic = new Logic(boardSize);
+  public final Pointer pointer;
 
   public Reversi (Platform plat) {
     super(plat, 33); // update our "simulation" 33ms (30 times per second)
+
+    // wire up pointer and mouse event dispatch
+    pointer = new Pointer(plat, rootLayer, true);
+    plat.input().mouseEvents.connect(new Mouse.Dispatcher(rootLayer, false));
 
     // figure out how big the game view is
     final IDimension size = plat.graphics().viewSize;
@@ -93,6 +100,57 @@ public class Reversi extends SceneGame {
   }
 
   private void endGame () {
-    // TODO
+    // count up the pieces for each color
+    Piece[] ps = Piece.values();
+    int[] count = new int[ps.length];
+    for (Piece p : pieces.values()) count[p.ordinal()]++;
+
+    // figure out who won
+    List<Piece> winners = new ArrayList<>();
+    int highScore = 0;
+    for (int ii = 0; ii < count.length; ii++) {
+      int score = count[ii];
+      if (score == highScore) winners.add(ps[ii]);
+      else if (score > highScore) {
+        winners.clear();
+        winners.add(ps[ii]);
+        highScore = score;
+      }
+    }
+
+    // if we have only one winner, they win; otherwise it's a tie
+    StringBuilder msg = new StringBuilder();
+    if (winners.size() == 1) msg.append(winners.get(0)).append(" wins!");
+    else {
+      for (Piece p : winners) {
+        if (msg.length() > 0) msg.append(" and ");
+        msg.append(p);
+      }
+      msg.append(" tie.");
+    }
+    msg.append("\nClick to play again.");
+
+    // render the game over message and display it in a layer
+    IDimension vsize = plat.graphics().viewSize;
+    TextBlock block = new TextBlock(plat.graphics().layoutText(
+      msg.toString(), new TextFormat(new Font("Helvetica", Font.Style.BOLD, 48)),
+      new TextWrap(vsize.width()-20)));
+    Canvas canvas = plat.graphics().createCanvas(block.bounds.width()+4, block.bounds.height()+4);
+    canvas.setFillColor(0xFF0000FF).setStrokeColor(0xFFFFFFFF).setStrokeWidth(4f);
+    block.stroke(canvas, TextBlock.Align.CENTER, 2, 2);
+    block.fill(canvas, TextBlock.Align.CENTER, 2, 2);
+    final ImageLayer layer = new ImageLayer(canvas.toTexture());
+    rootLayer.addFloorAt(layer, (vsize.width()-canvas.width)/2, (vsize.height()-canvas.height)/2);
+
+    // when the player clicks anywhere, restart the game
+    pointer.events.connect(new Slot<Pointer.Event>() {
+      @Override public void onEmit (Pointer.Event event) {
+        if (event.kind.isStart) {
+          layer.close();
+          reset();
+          pointer.events.disconnect(this);
+        }
+      }
+    });
   }
 }

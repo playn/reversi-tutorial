@@ -18,10 +18,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import playn.core.*;
-import playn.scene.*;
 import pythagoras.f.IDimension;
 import react.RMap;
+
+import playn.core.*;
+import playn.scene.*;
+import playn.scene.Mouse;
+import playn.scene.Pointer;
 
 import reversi.core.Reversi.Piece;
 import reversi.core.Reversi.Coord;
@@ -62,12 +65,28 @@ public class GameView extends GroupLayer {
     });
   }
 
-  public void showPlays (List<Coord> coords, Piece color) {
+  public void showPlays (List<Coord> coords, final Piece color) {
     final List<ImageLayer> plays = new ArrayList<>();
-    for (Coord coord : coords) {
+    for (final Coord coord : coords) {
       ImageLayer pview = addPiece(coord, color);
       pview.setAlpha(0.3f);
-      // TODO: listen for a click on pview and make that move
+      // when the player clicks on a potential play, commit that play as their move
+      pview.events().connect(new Pointer.Listener() {
+        @Override public void onStart (Pointer.Interaction iact) {
+          // clear out the potential plays layers
+          for (ImageLayer play : plays) play.close();
+          // apply this play to the game state
+          game.logic.applyPlay(game.pieces, color, coord);
+          // and move to the next player's turn
+          game.turn.update(color.next());
+        }
+      });
+      // when the player hovers over a potential play, highlight it
+      pview.events().connect(new Mouse.Listener() {
+        @Override public void onHover (Mouse.HoverEvent event, Mouse.Interaction iact) {
+          iact.hitLayer.setAlpha(event.inside ? 0.6f : 0.3f);
+        }
+      });
       plays.add(pview);
     }
   }
